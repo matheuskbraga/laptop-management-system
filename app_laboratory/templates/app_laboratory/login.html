@@ -1,0 +1,15 @@
+{% extends 'app_laboratory/base.html' %}
+{% block content %}
+<h1>Login</h1>
+{% if form.errors %}
+  <p style="color: var(--color-danger);">Usuário ou senha incorretos.</p>
+{% endif %}
+<form method="post">
+  {% csrf_token %}
+  <label>Usuário</label>
+  {{ form.username }}
+  <label>Senha</label>
+  {{ form.password }}
+  <button type="submit">Entrar</button>
+</form>
+{% endblock %}

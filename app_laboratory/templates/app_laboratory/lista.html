@@ -1,0 +1,35 @@
+{% extends 'app_laboratory/base.html' %}
+{% block content %}
+<h1>Notebooks do Laboratório</h1>
+<a href="{% url 'criar_notebook' %}" class="btn-novo">+ Cadastrar notebook</a>
+
+<table>
+  <tr>
+    <th>Número</th>
+    <th>Status</th>
+    <th>Emprestado para</th>
+    <th>Ações</th>
+  </tr>
+  {% for nb in notebooks %}
+  <tr>
+    <td>{{ nb.numero }}</td>
+    <td>
+      {% if nb.esta_emprestado %}
+        <span class="status status-emprestado">Emprestado</span>
+      {% else %}
+        <span class="status status-livre">Disponível</span>
+      {% endif %}
+    </td>
+    <td>{{ nb.pessoa_emprestada|default:"-" }}</td>
+    <td class="acoes">
+      {% if nb.esta_emprestado %}
+        <a href="{% url 'devolver_notebook' nb.pk %}">Devolver</a>
+      {% else %}
+        <a href="{% url 'emprestar_notebook' nb.pk %}">Emprestar</a>
+      {% endif %}
+      <a href="{% url 'remover_notebook' nb.pk %}">Remover</a>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

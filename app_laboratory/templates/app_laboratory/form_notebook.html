@@ -1,0 +1,10 @@
+{% extends 'app_laboratory/base.html' %}
+{% block content %}
+<h1>Cadastrar Notebook</h1>
+<form method="post">
+  {% csrf_token %}
+  <label>Número do notebook</label>
+  <input type="text" name="numero" required>
+  <button type="submit">Cadastrar</button>
+</form>
+{% endblock %}

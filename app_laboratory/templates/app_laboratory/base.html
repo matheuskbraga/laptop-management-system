@@ -1,0 +1,28 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Laboratório de Notebooks</title>
+    <link rel="stylesheet" href="{% static 'app_laboratory/style.css' %}">
+</head>
+<body>
+
+    <div class="barra-usuario">
+        {% if user.is_authenticated %}
+            Olá, {{ user.username }} —
+            <form method="post" action="{% url 'logout' %}" class="form-logout">
+                {% csrf_token %}
+                <button type="submit">Sair</button>
+            </form>
+        {% endif %}
+    </div>
+
+    <div class="container">
+        {% block content %}
+        {% endblock %}
+    </div>
+
+    
+</body>
+</html>

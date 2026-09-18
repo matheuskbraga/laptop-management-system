@@ -1,0 +1,10 @@
+{% extends 'app_laboratory/base.html' %}
+{% block content %}
+<h1>Emprestar Notebook {{ notebook.numero }}</h1>
+<form method="post">
+  {% csrf_token %}
+  <label>Nome da pessoa</label>
+  <input type="text" name="pessoa" required>
+  <button type="submit">Confirmar empréstimo</button>
+</form>
+{% endblock %}
