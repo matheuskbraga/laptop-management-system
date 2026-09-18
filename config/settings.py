@@ -130,3 +130,10 @@ MAILERS = {
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'listar_notebooks'
 LOGOUT_REDIRECT_URL = 'login'
+
+DEBUG = False
+
+ALLOWED_HOSTS = ['seunome.pythonanywhere.com']  # troque "seunome" pelo seu usuário lá
+
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
