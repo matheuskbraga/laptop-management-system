@@ -133,7 +133,7 @@ LOGOUT_REDIRECT_URL = 'login'
 
 DEBUG = False
 
-ALLOWED_HOSTS = ['seunome.pythonanywhere.com']  # troque "seunome" pelo seu usuário lá
+ALLOWED_HOSTS = ['bragadev50.pythonanywhere.com']
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
