@@ -1,0 +1,95 @@
+{% extends 'app_laboratory/base.html' %}
+{% load lab humanize %}
+{% block title %}{{ ag.titulo }}{% endblock %}
+{% block eyebrow %}Agendamento · {{ ag.get_tipo_display }}{% endblock %}
+{% block page_title %}{{ ag.titulo }}{% endblock %}
+
+{% block content %}
+<div class="panel reveal" style="margin-bottom:20px">
+    <div class="hero">
+        <div class="hero-icone" style="--c:var(--violet)">{% icon 'calendar' %}</div>
+        <div>
+            <h2 style="font-size:1.4rem">{{ ag.data|date:"l, d \d\e F" }}</h2>
+            <div class="muted">{{ ag.hora_inicio|time:"H:i" }} às {{ ag.hora_fim|time:"H:i" }} · {{ ag.solicitante }}{% if ag.contato %} · {{ ag.contato }}{% endif %}</div>
+            <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap">
+                {% if ag.cancelado %}<span class="badge gray">cancelado</span>
+                {% elif ag.em_andamento %}<span class="badge"><span class="led pulsa"></span>acontecendo agora</span>
+                {% elif ag.passado %}<span class="badge gray">encerrado</span>
+                {% else %}<span class="badge green"><span class="led"></span>confirmado</span>{% endif %}
+                <span class="badge violet">{{ ag.get_tipo_display }}</span>
+            </div>
+        </div>
+        <div class="acoes">
+            {% if not ag.cancelado and not ag.passado and faltam %}
+                <a class="btn btn-green" href="{% url 'emprestimo_novo' %}?agendamento={{ ag.pk }}">{% icon 'zap' %} Registrar retirada</a>
+            {% endif %}
+            {% if ativos %}
+                <form method="post" action="{% url 'agenda_devolver' ag.pk %}" class="inline" data-confirmar="Registrar a devolução dos {{ ativos|length }} notebook(s) deste agendamento?">
+                    {% csrf_token %}<button class="btn">{% icon 'return' %} Devolver todos ({{ ativos|length }})</button>
+                </form>
+            {% endif %}
+            {% if not ag.passado %}<a class="btn btn-icon" href="{% url 'agenda_editar' ag.pk %}" title="Editar">{% icon 'edit' %}</a>{% endif %}
+            {% if ag.cancelado %}
+                {% if not ag.passado %}
+                <form method="post" action="{% url 'agenda_reativar' ag.pk %}" class="inline">{% csrf_token %}<button class="btn btn-sm">Reativar</button></form>
+                {% endif %}
+            {% elif not ag.passado %}
+                <form method="post" action="{% url 'agenda_cancelar' ag.pk %}" class="inline" data-confirmar="Cancelar o agendamento &quot;{{ ag.titulo }}&quot;? Os notebooks reservados ficam livres para outras pessoas.">
+                    {% csrf_token %}<button class="btn btn-red btn-sm">{% icon 'x' %} Cancelar</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-main">
+    <div class="panel reveal" style="--i:1">
+        <div class="panel-head">
+            <h2>{% icon 'laptop' %} Notebooks retirados</h2>
+            <span class="badge violet" style="margin-left:auto">{{ ativos|length }} de {{ ag.quantidade }} em uso</span>
+        </div>
+        <div class="progresso" style="margin-bottom:18px"><span style="width:{% widthratio ativos|length ag.quantidade 100 %}%"></span></div>
+        {% if emprestimos %}
+        <div class="tabela-wrap">
+        <table class="tabela">
+            <thead><tr><th>Notebook</th><th>Com</th><th>Saída</th><th>Situação</th><th></th></tr></thead>
+            <tbody>
+            {% for e in emprestimos %}
+            <tr class="{% if e.atrasado %}atrasado{% endif %}">
+                <td class="num"><a href="{% url 'notebook_detalhe' e.notebook.pk %}">{{ e.notebook }}</a></td>
+                <td>{{ e.pessoa }}</td>
+                <td>{{ e.retirado_em|date:"d/m H:i" }}</td>
+                <td>{% if e.ativo %}<span class="badge {% if e.atrasado %}amber{% else %}violet{% endif %}">em uso</span>{% else %}<span class="badge green">devolvido {{ e.devolvido_em|date:"H:i" }}</span>{% endif %}</td>
+                <td class="acoes-cel">{% if e.ativo %}
+                    <form method="post" action="{% url 'emprestimo_devolver' e.pk %}" class="inline">
+                        {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button class="btn btn-sm">{% icon 'return' %}</button>
+                    </form>{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <div class="vazio">
+            {% icon 'laptop' %}Nenhum notebook retirado ainda.
+            {% if not ag.cancelado and not ag.passado %}
+            <span class="faint">Na hora do agendamento, use "Registrar retirada": os {{ ag.quantidade }} notebooks já vêm pré-selecionados ({{ disponiveis_agora }} disponíveis agora).</span>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="panel reveal" style="--i:2">
+        <div class="panel-head"><h2>{% icon 'info' %} Detalhes</h2></div>
+        <dl class="kv">
+            <dt>Quantidade</dt><dd class="qtd">{% icon 'laptop' %}{{ ag.quantidade }}</dd>
+            <dt>Solicitante</dt><dd>{{ ag.solicitante }}</dd>
+            <dt>Contato</dt><dd>{{ ag.contato|default:"—" }}</dd>
+            <dt>Observações</dt><dd>{{ ag.observacoes|default:"—"|linebreaksbr }}</dd>
+            <dt>Criado</dt><dd>{{ ag.criado_em|naturaltime }}{% if ag.criado_por %} por {{ ag.criado_por }}{% endif %}</dd>
+        </dl>
+    </div>
+</div>
+{% endblock %}

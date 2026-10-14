@@ -1,0 +1,53 @@
+{% extends 'app_laboratory/base.html' %}
+{% load lab %}
+{% block title %}{% if nb %}Editar {{ nb }}{% else %}Cadastrar notebook{% endif %}{% endblock %}
+{% block eyebrow %}Inventário{% endblock %}
+{% block page_title %}{% if nb %}Editar {{ nb }}{% else %}Cadastrar notebook{% endif %}{% endblock %}
+
+{% block content %}
+<div class="form-card">
+    {% if not nb %}
+    <nav class="seg reveal">
+        <a href="?modo=unico" class="{% if modo != 'lote' %}ativo{% endif %}">{% icon 'laptop' %} Um notebook</a>
+        <a href="?modo=lote" class="{% if modo == 'lote' %}ativo{% endif %}">{% icon 'layers' %} Vários de uma vez</a>
+    </nav>
+    {% endif %}
+
+    {% if modo == 'lote' %}
+    <form method="post" class="panel reveal" style="--i:1">
+        {% csrf_token %}
+        <input type="hidden" name="modo" value="lote">
+        <p class="muted" style="margin-bottom:18px">Gera uma sequência numerada, por exemplo <span class="mono" style="color:var(--cyan)">NB-01</span> até <span class="mono" style="color:var(--cyan)">NB-30</span>. Números que já existem são ignorados.</p>
+        {% for e in lote_form.non_field_errors %}<div class="erro-geral">{% icon 'alert' %}{{ e }}</div>{% endfor %}
+        <div class="campos-2">
+            {% include 'app_laboratory/_campo.html' with f=lote_form.prefixo %}
+            {% include 'app_laboratory/_campo.html' with f=lote_form.modelo %}
+        </div>
+        <div class="campos-3">
+            {% include 'app_laboratory/_campo.html' with f=lote_form.inicio %}
+            {% include 'app_laboratory/_campo.html' with f=lote_form.fim %}
+            {% include 'app_laboratory/_campo.html' with f=lote_form.digitos %}
+        </div>
+        <div class="form-acoes">
+            <button class="btn btn-primary">{% icon 'layers' %} Cadastrar lote</button>
+            <a class="btn btn-ghost" href="{% url 'notebooks' %}">Cancelar</a>
+        </div>
+    </form>
+    {% else %}
+    <form method="post" class="panel reveal" style="--i:1">
+        {% csrf_token %}
+        <input type="hidden" name="modo" value="unico">
+        <div class="campos-2">
+            {% include 'app_laboratory/_campo.html' with f=form.numero %}
+            {% include 'app_laboratory/_campo.html' with f=form.modelo %}
+        </div>
+        {% include 'app_laboratory/_campo.html' with f=form.observacoes %}
+        <div class="form-acoes">
+            <button class="btn btn-primary">{% icon 'check' %} {% if nb %}Salvar{% else %}Cadastrar{% endif %}</button>
+            {% if not nb %}<button class="btn" name="outro" value="1">{% icon 'plus' %} Salvar e cadastrar outro</button>{% endif %}
+            <a class="btn btn-ghost" href="{% if nb %}{% url 'notebook_detalhe' nb.pk %}{% else %}{% url 'notebooks' %}{% endif %}">Cancelar</a>
+        </div>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}

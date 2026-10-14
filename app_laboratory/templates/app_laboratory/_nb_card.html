@@ -1,0 +1,43 @@
+{% load lab humanize %}{% with emp=nb.emprestimo_ativo baixa=nb.baixa_ativa %}
+<article class="nb {{ nb.status }}{% if emp.atrasado %} atrasado{% endif %} reveal" style="--i:{{ i|default:0 }}"
+         data-busca="{{ nb.numero|lower }} {{ nb.modelo|lower }} {{ emp.pessoa|default:''|lower }}">
+    <div class="nb-topo">
+        <div>
+            <a class="nb-num" href="{% url 'notebook_detalhe' nb.pk %}">{{ nb.numero }}</a>
+            <div class="nb-modelo">{{ nb.modelo|default:"—" }}</div>
+        </div>
+        <span class="badge"><span class="led{% if not nb.disponivel %} pulsa{% endif %}"></span>{% if emp.atrasado %}Atrasado{% else %}{{ nb.get_status_display }}{% endif %}</span>
+    </div>
+
+    <div class="nb-info">
+        {% if nb.quebrado %}
+            <div class="linha">{% icon 'alert' %}<strong title="{{ baixa.motivo }}">{{ baixa.motivo|default:"Sem descrição"|truncatechars:48 }}</strong></div>
+            <div class="linha">{% icon 'clock' %}{% if baixa %}desde {{ baixa.registrado_em|date:"d/m/Y" }}{% if baixa.registrado_por %} · {{ baixa.registrado_por }}{% endif %}{% endif %}</div>
+        {% elif emp %}
+            <div class="linha">{% icon 'user' %}<strong>{{ emp.pessoa }}</strong></div>
+            <div class="linha">{% icon 'clock' %}{% if emp.devolucao_prevista %}{% if emp.atrasado %}venceu {% else %}até {% endif %}{{ emp.devolucao_prevista|date:"d/m H:i" }}{% else %}saiu {{ emp.retirado_em|naturaltime }}{% endif %}</div>
+        {% else %}
+            <div class="linha">{% icon 'check' %}Pronto para uso</div>
+            <div class="linha">{% icon 'history' %}{{ nb.observacoes|default:"Sem observações"|truncatechars:40 }}</div>
+        {% endif %}
+    </div>
+
+    <div class="nb-acoes">
+        {% if nb.disponivel %}
+            <a class="btn btn-sm btn-green" href="{% url 'emprestimo_novo' %}?notebook={{ nb.pk }}">{% icon 'swap' %} Emprestar</a>
+        {% elif nb.emprestado %}
+            <form method="post" action="{% url 'notebook_devolver' nb.pk %}" class="inline">
+                {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button class="btn btn-sm">{% icon 'return' %} Devolver</button>
+            </form>
+        {% else %}
+            <button class="btn btn-sm btn-amber" data-modal="#modal-reparar"
+                    data-action="{% url 'notebook_reparar' nb.pk %}" data-numero="{{ nb.numero }}">{% icon 'wrench' %} Reparado</button>
+        {% endif %}
+        {% if not nb.quebrado %}
+            <button class="btn btn-sm btn-red btn-icon" title="Dar baixa: marcar como quebrado" aria-label="Dar baixa em {{ nb.numero }}"
+                    data-modal="#modal-baixa" data-action="{% url 'notebook_baixa' nb.pk %}" data-numero="{{ nb.numero }}">{% icon 'alert' %}</button>
+        {% endif %}
+    </div>
+</article>
+{% endwith %}

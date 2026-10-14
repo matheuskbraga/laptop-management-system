@@ -1,28 +1,113 @@
-{% load static %}
-<!DOCTYPE html>
+{% load static lab %}<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Laboratório de Notebooks</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Painel{% endblock %} · NoteLab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
     <link rel="stylesheet" href="{% static 'app_laboratory/style.css' %}">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2322e3ff' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16'/%3E%3C/svg%3E">
 </head>
 <body>
+    <div class="bg-glow"></div>
+    <canvas id="fx-bg" aria-hidden="true"></canvas>
+    <div class="bg-grid"></div>
 
-    <div class="barra-usuario">
-        {% if user.is_authenticated %}
-            Olá, {{ user.username }} —
-            <form method="post" action="{% url 'logout' %}" class="form-logout">
-                {% csrf_token %}
-                <button type="submit">Sair</button>
-            </form>
-        {% endif %}
+    {% if user.is_authenticated %}
+    {% with u=request.resolver_match.url_name|default:"" %}
+    <div class="shell">
+        <aside class="sidebar" id="sidebar">
+            <a class="brand" href="{% url 'painel' %}">
+                <span class="brand-mark">{% icon 'laptop' %}</span>
+                <span>
+                    <div class="brand-name">NOTE<span>//</span>LAB</div>
+                    <div class="brand-sub">controle de notebooks</div>
+                </span>
+            </a>
+
+            <nav class="nav">
+                <div class="nav-label">Operação</div>
+                <a href="{% url 'painel' %}" class="{% if u == 'painel' %}ativo{% endif %}">{% icon 'grid' %} Painel</a>
+                <a href="{% url 'notebooks' %}" class="{% if 'notebook' in u %}ativo{% endif %}">
+                    {% icon 'laptop' %} Notebooks
+                    {% if menu_quebrados %}<span class="nav-badge red" title="Quebrados">{{ menu_quebrados }}</span>{% endif %}
+                </a>
+                <a href="{% url 'emprestimos' %}" class="{% if 'emprestimo' in u %}ativo{% endif %}">
+                    {% icon 'swap' %} Empréstimos
+                    {% if menu_atrasados %}<span class="nav-badge amber" title="Atrasados">{{ menu_atrasados }}</span>{% endif %}
+                </a>
+                <a href="{% url 'agenda' %}" class="{% if 'agenda' in u %}ativo{% endif %}">
+                    {% icon 'calendar' %} Agenda
+                    {% if menu_agenda_hoje %}<span class="nav-badge" title="Agendamentos hoje">{{ menu_agenda_hoje }}</span>{% endif %}
+                </a>
+
+                <div class="nav-label">Ações rápidas</div>
+                <a href="{% url 'emprestimo_novo' %}">{% icon 'zap' %} Novo empréstimo</a>
+                <a href="{% url 'agenda_novo' %}">{% icon 'plus' %} Novo agendamento</a>
+                {% if user.is_staff %}
+                <a href="{% url 'admin:index' %}">{% icon 'users' %} Administração</a>
+                {% endif %}
+            </nav>
+
+            <div class="sidebar-foot">
+                <div class="user-card">
+                    <div class="avatar">{{ user.get_username|slice:":2"|upper }}</div>
+                    <div>
+                        <div class="nome">{{ user.get_full_name|default:user.get_username }}</div>
+                        <div class="papel">Gerenciador</div>
+                    </div>
+                    <form method="post" action="{% url 'logout' %}">
+                        {% csrf_token %}
+                        <button class="btn btn-ghost btn-icon btn-sm" title="Sair">{% icon 'logout' %}</button>
+                    </form>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main">
+            <header class="topbar">
+                <button class="btn btn-icon menu-toggle" aria-label="Abrir menu">{% icon 'menu' %}</button>
+                <div class="titulo">
+                    <div class="eyebrow">{% block eyebrow %}Sistema{% endblock %}</div>
+                    <h1>{% block page_title %}Painel{% endblock %}</h1>
+                </div>
+                <div class="topbar-acoes">
+                    {% block topbar_acoes %}{% endblock %}
+                    <div class="relogio"><span class="hora">--:--:--</span><span class="data">&nbsp;</span></div>
+                </div>
+            </header>
+            <section class="content">
+                {% block content %}{% endblock %}
+            </section>
+        </main>
     </div>
+    {% endwith %}
+    {% include 'app_laboratory/_modais.html' %}
+    {% else %}
+        {% block publico %}{% endblock %}
+    {% endif %}
 
-    <div class="container">
-        {% block content %}
-        {% endblock %}
+    {% if messages %}
+    <div class="toasts" role="status">
+        {% for m in messages %}
+        <div class="toast {{ m.tags }}">
+            {% if m.level_tag == 'success' %}{% icon 'check' %}{% elif m.level_tag == 'error' or m.level_tag == 'warning' %}{% icon 'alert' %}{% else %}{% icon 'info' %}{% endif %}
+            <div>{{ m }}</div>
+            <button aria-label="Fechar">{% icon 'x' %}</button>
+        </div>
+        {% endfor %}
     </div>
+    {% endif %}
 
-    
+    <svg width="0" height="0" style="position:absolute">
+        <defs>
+            <linearGradient id="grad-ring" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#22e3ff"/><stop offset="1" stop-color="#9b7bff"/>
+            </linearGradient>
+        </defs>
+    </svg>
+    <script src="{% static 'app_laboratory/app.js' %}" defer></script>
 </body>
 </html>

@@ -1,0 +1,58 @@
+{% load lab %}
+{# Baixa: marca um notebook como quebrado. Exige a senha do gerenciador logado. #}
+<dialog class="modal" id="modal-baixa" aria-labelledby="baixa-titulo">
+    <form method="post" class="modal-box perigo">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <button type="button" class="btn btn-ghost btn-icon btn-sm modal-fechar" data-fechar aria-label="Fechar">{% icon 'x' %}</button>
+        <div class="modal-icone">{% icon 'alert' %}</div>
+        <h3 id="baixa-titulo">Dar baixa no notebook <span data-fill="numero"></span>?</h3>
+        <p class="sub">Ele será marcado como <strong>QUEBRADO</strong>, ficará destacado em vermelho e sairá de circulação
+            (não poderá ser emprestado nem contará para a agenda) até ser reparado.</p>
+        <div class="autorizacao">{% icon 'lock' %} Ação protegida: confirme com a sua senha para autorizar.</div>
+        <div class="campo">
+            <label for="baixa-motivo">O que aconteceu?</label>
+            <textarea id="baixa-motivo" name="motivo" rows="3" required maxlength="1000"
+                      placeholder="Ex.: tela trincada, não liga, teclado com teclas faltando..."></textarea>
+        </div>
+        <div class="campo">
+            <label for="baixa-senha">Sua senha</label>
+            <input id="baixa-senha" type="password" name="senha" required autocomplete="current-password">
+        </div>
+        <div class="form-acoes">
+            <button type="submit" class="btn btn-danger">{% icon 'alert' %} Autorizar baixa</button>
+            <button type="button" class="btn btn-ghost" data-fechar>Cancelar</button>
+        </div>
+    </form>
+</dialog>
+
+<dialog class="modal" id="modal-reparar" aria-labelledby="reparar-titulo">
+    <form method="post" class="modal-box">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <button type="button" class="btn btn-ghost btn-icon btn-sm modal-fechar" data-fechar aria-label="Fechar">{% icon 'x' %}</button>
+        <div class="modal-icone">{% icon 'wrench' %}</div>
+        <h3 id="reparar-titulo">Notebook <span data-fill="numero"></span> reparado?</h3>
+        <p class="sub">Ele volta a ficar <strong>disponível</strong> para empréstimos e agendamentos.</p>
+        <div class="campo">
+            <label for="reparar-solucao">O que foi feito (opcional)</label>
+            <textarea id="reparar-solucao" name="solucao" rows="2" placeholder="Ex.: tela substituída pela assistência"></textarea>
+        </div>
+        <div class="form-acoes">
+            <button type="submit" class="btn btn-primary">{% icon 'check' %} Confirmar reparo</button>
+            <button type="button" class="btn btn-ghost" data-fechar>Cancelar</button>
+        </div>
+    </form>
+</dialog>
+
+<dialog class="modal" id="modal-confirmar">
+    <div class="modal-box">
+        <div class="modal-icone">{% icon 'info' %}</div>
+        <h3>Confirmar ação</h3>
+        <p class="sub" data-fill="texto"></p>
+        <div class="form-acoes">
+            <button type="button" class="btn btn-primary" data-ok>{% icon 'check' %} Confirmar</button>
+            <button type="button" class="btn btn-ghost" data-fechar>Cancelar</button>
+        </div>
+    </div>
+</dialog>

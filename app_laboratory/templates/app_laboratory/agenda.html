@@ -1,0 +1,98 @@
+{% extends 'app_laboratory/base.html' %}
+{% load lab %}
+{% block title %}Agenda{% endblock %}
+{% block eyebrow %}Reservas{% endblock %}
+{% block page_title %}Agenda{% endblock %}
+{% block topbar_acoes %}
+    <a class="btn btn-primary" href="{% url 'agenda_novo' %}?data={{ dia_sel|date:'Y-m-d' }}">{% icon 'plus' %}<span class="txt">Novo agendamento</span></a>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-main">
+    <div class="panel reveal">
+        <div class="cal-head">
+            <a class="btn btn-icon btn-sm" href="?ano={{ anterior.year }}&mes={{ anterior.month }}" title="Mês anterior">{% icon 'left' %}</a>
+            <h2>{{ mes_nome }} <span>{{ ano }}</span></h2>
+            <a class="btn btn-icon btn-sm" href="?ano={{ proximo.year }}&mes={{ proximo.month }}" title="Próximo mês">{% icon 'right' %}</a>
+            {% if ano != hoje.year or mes != hoje.month %}<a class="btn btn-sm btn-ghost" href="?">Hoje</a>{% endif %}
+            <div class="cal-legenda">
+                <span><i style="background:linear-gradient(90deg,var(--green),var(--cyan))"></i>tranquilo</span>
+                <span><i style="background:linear-gradient(90deg,var(--amber),var(--red))"></i>lotado</span>
+                <span class="mono">{{ frota }} em funcionamento</span>
+            </div>
+        </div>
+        <div class="cal">
+            {% for d in dias_semana %}<div class="cal-dow">{{ d }}</div>{% endfor %}
+            {% for semana in grade %}{% for c in semana %}
+            <a class="dia{% if c.fora %} fora{% endif %}{% if c.hoje %} hoje{% endif %}{% if c.passado %} passado{% endif %}{% if c.selecionado %} selecionado{% endif %}"
+               href="?ano={{ c.data.year }}&mes={{ c.data.month }}&dia={{ c.data|date:'Y-m-d' }}"
+               title="{% if c.pico %}Pico de {{ c.pico }} de {{ frota }} notebooks reservados{% endif %}">
+                <span class="d-num">{{ c.data.day }}</span>
+                {% for ag in c.itens|slice:":2" %}
+                    <span class="d-evento{% if ag.cancelado %} cancelado{% endif %}">{{ ag.hora_inicio|time:"H:i" }} {{ ag.titulo }}</span>
+                {% endfor %}
+                {% if c.itens|length > 2 %}<span class="d-mais">+{{ c.itens|length|add:"-2" }} mais</span>{% endif %}
+                {% if c.itens %}<span class="d-pontos">{% for ag in c.itens|slice:":4" %}<i></i>{% endfor %}</span>{% endif %}
+                {% if c.pico %}
+                <span class="d-carga{% if c.carga >= 85 %} alta{% elif c.carga >= 50 %} media{% endif %}"><span style="--w:{{ c.carga }}%"></span></span>
+                {% endif %}
+            </a>
+            {% endfor %}{% endfor %}
+        </div>
+    </div>
+
+    <div class="stack">
+        <div class="panel dia-painel reveal" style="--i:1">
+            <div class="panel-head">
+                <div>
+                    <div class="eyebrow">{{ dia_sel|date:"l" }}</div>
+                    <h3>{{ dia_sel|date:"d \d\e F" }}</h3>
+                </div>
+                <div class="acoes">
+                    {% if dia_sel >= hoje %}<a class="btn btn-sm" href="{% url 'agenda_novo' %}?data={{ dia_sel|date:'Y-m-d' }}">{% icon 'plus' %} Agendar</a>{% endif %}
+                </div>
+            </div>
+            {% if itens_dia %}
+            <div class="lista-itens">
+                {% for ag in itens_dia %}
+                <a class="ag{% if ag.cancelado %} cancelado{% endif %}" href="{% url 'agenda_detalhe' ag.pk %}">
+                    <div class="t">{{ ag.titulo }}</div>
+                    <div class="meta">
+                        <span>{% icon 'clock' %}{{ ag.hora_inicio|time:"H:i" }}–{{ ag.hora_fim|time:"H:i" }}</span>
+                        <span class="qtd">{% icon 'laptop' %}{{ ag.quantidade }}</span>
+                        <span>{% icon 'user' %}{{ ag.solicitante }}</span>
+                        {% if ag.cancelado %}<span class="badge gray">cancelado</span>
+                        {% elif ag.retirados %}<span class="badge green">retirado</span>
+                        {% elif ag.em_andamento %}<span class="badge"><span class="led pulsa"></span>agora</span>
+                        {% else %}<span class="badge violet">{{ ag.get_tipo_display }}</span>{% endif %}
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="vazio">{% icon 'calendar' %}Nenhum agendamento neste dia.</div>
+            {% endif %}
+        </div>
+
+        <div class="panel reveal" style="--i:2">
+            <div class="panel-head"><h2>{% icon 'zap' %} Próximos</h2></div>
+            {% if proximos %}
+            <div class="lista-itens">
+                {% for ag in proximos %}
+                <a class="item" href="{% url 'agenda_detalhe' ag.pk %}">
+                    <div class="hora-bloco"><b>{{ ag.data|date:"d" }}</b>{{ ag.data|date:"b" }}</div>
+                    <div class="corpo">
+                        <div class="t">{{ ag.titulo }}</div>
+                        <div class="s">{{ ag.hora_inicio|time:"H:i" }}–{{ ag.hora_fim|time:"H:i" }} · {{ ag.solicitante }}</div>
+                    </div>
+                    <div class="qtd">{% icon 'laptop' %}{{ ag.quantidade }}</div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="vazio">{% icon 'calendar' %}Nenhum agendamento futuro.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

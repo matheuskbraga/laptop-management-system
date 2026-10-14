@@ -1,0 +1,189 @@
+{% extends 'app_laboratory/base.html' %}
+{% load lab humanize %}
+{% block title %}Painel{% endblock %}
+{% block eyebrow %}Visão geral{% endblock %}
+{% block page_title %}Painel de controle{% endblock %}
+{% block topbar_acoes %}
+    <a class="btn" href="{% url 'agenda_novo' %}">{% icon 'calendar' %}<span class="txt">Agendar</span></a>
+    <a class="btn btn-primary" href="{% url 'emprestimo_novo' %}">{% icon 'zap' %}<span class="txt">Novo empréstimo</span></a>
+{% endblock %}
+
+{% block content %}
+<div class="stats">
+    <a class="stat reveal" style="--i:0" href="{% url 'notebooks' %}">
+        <span class="rotulo">{% icon 'laptop' %} Inventário</span>
+        <span class="valor" data-count="{{ c.total }}">{{ c.total }}</span>
+        <span class="det">notebooks cadastrados</span>
+    </a>
+    <a class="stat green reveal" style="--i:1" href="{% url 'notebooks' %}?status=disponivel">
+        <span class="rotulo">{% icon 'check' %} Disponíveis</span>
+        <span class="valor" data-count="{{ c.disponiveis }}">{{ c.disponiveis }}</span>
+        <span class="det">prontos para sair</span>
+    </a>
+    <a class="stat violet reveal" style="--i:2" href="{% url 'notebooks' %}?status=emprestado">
+        <span class="rotulo">{% icon 'swap' %} Emprestados</span>
+        <span class="valor" data-count="{{ c.emprestados }}">{{ c.emprestados }}</span>
+        <span class="det">{% if atrasados %}{{ atrasados|length }} com devolução atrasada{% else %}fora do laboratório{% endif %}</span>
+    </a>
+    <a class="stat red reveal{% if c.quebrados %} alerta{% endif %}" style="--i:3" href="{% url 'notebooks' %}?status=quebrado">
+        <span class="rotulo">{% icon 'alert' %} Quebrados</span>
+        <span class="valor" data-count="{{ c.quebrados }}">{{ c.quebrados }}</span>
+        <span class="det">fora de circulação</span>
+    </a>
+    <div class="stat stat-ring reveal" style="--i:4">
+        <div class="ring" data-pct="{{ c.uso_pct }}">
+            <svg viewBox="0 0 86 86"><circle class="trilho" cx="43" cy="43" r="36"/><circle class="barra" cx="43" cy="43" r="36"/></svg>
+            <div class="pct">{{ c.uso_pct }}%</div>
+        </div>
+        <div>
+            <span class="rotulo">{% icon 'activity' %} Taxa de uso</span>
+            <div class="det" style="margin-top:6px">dos notebooks em funcionamento estão emprestados agora</div>
+        </div>
+    </div>
+</div>
+
+{% if atrasados %}
+<div class="alerta-box amber reveal" style="--i:5; margin-bottom:20px">
+    {% icon 'clock' %}
+    <div>
+        <strong>{{ atrasados|length }} empréstimo{{ atrasados|pluralize }} com devolução atrasada</strong>
+        <div class="muted" style="font-size:.86rem">
+            {% for e in atrasados|slice:":6" %}{{ e.notebook }} ({{ e.pessoa }}){% if not forloop.last %} · {% endif %}{% endfor %}{% if atrasados|length > 6 %} …{% endif %}
+        </div>
+    </div>
+    <a class="btn btn-sm btn-amber" style="margin-left:auto" href="{% url 'emprestimos' %}">Ver</a>
+</div>
+{% endif %}
+
+<div class="grid grid-main">
+    <div class="stack">
+        <div class="panel reveal" style="--i:5">
+            <div class="panel-head">
+                <h2>{% icon 'calendar' %} Hoje na agenda</h2>
+                <div class="acoes"><a class="btn btn-sm btn-ghost" href="{% url 'agenda' %}">Abrir agenda {% icon 'arrow' %}</a></div>
+            </div>
+            {% if agenda_hoje %}
+            <div class="lista-itens">
+                {% for ag in agenda_hoje %}
+                <div class="item">
+                    <div class="hora-bloco"><b>{{ ag.hora_inicio|time:"H:i" }}</b>{{ ag.hora_fim|time:"H:i" }}</div>
+                    <a class="corpo" href="{% url 'agenda_detalhe' ag.pk %}" style="color:inherit">
+                        <div class="t">{{ ag.titulo }}</div>
+                        <div class="s">{{ ag.get_tipo_display }} · {{ ag.solicitante }}</div>
+                    </a>
+                    <div class="lado">
+                        <div class="qtd">{% icon 'laptop' %}{{ ag.quantidade }}</div>
+                        {% if ag.retirados %}
+                            <span class="badge green">retirado</span>
+                        {% elif not ag.passado %}
+                            <a class="btn btn-sm btn-green" href="{% url 'emprestimo_novo' %}?agendamento={{ ag.pk }}">Retirada</a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="vazio">{% icon 'calendar' %}Nenhum agendamento para hoje.</div>
+            {% endif %}
+        </div>
+
+        <div class="panel reveal" style="--i:6">
+            <div class="panel-head">
+                <h2>{% icon 'swap' %} Empréstimos ativos</h2>
+                <div class="acoes"><a class="btn btn-sm btn-ghost" href="{% url 'emprestimos' %}">Ver todos {% icon 'arrow' %}</a></div>
+            </div>
+            {% if ativos %}
+            <div class="tabela-wrap">
+            <table class="tabela">
+                <thead><tr><th>Notebook</th><th>Com</th><th>Saída</th><th>Devolução</th><th></th></tr></thead>
+                <tbody>
+                {% for e in ativos %}
+                <tr class="{% if e.atrasado %}atrasado{% endif %}">
+                    <td class="num"><a href="{% url 'notebook_detalhe' e.notebook.pk %}">{{ e.notebook }}</a></td>
+                    <td>{{ e.pessoa }}</td>
+                    <td class="muted">{{ e.retirado_em|naturaltime }}</td>
+                    <td>{% if e.atrasado %}<span class="badge amber">venceu {{ e.devolucao_prevista|date:"d/m H:i" }}</span>{% elif e.devolucao_prevista %}{{ e.devolucao_prevista|date:"d/m H:i" }}{% else %}<span class="faint">—</span>{% endif %}</td>
+                    <td class="acoes-cel">
+                        <form method="post" action="{% url 'emprestimo_devolver' e.pk %}" class="inline">
+                            {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <button class="btn btn-sm">{% icon 'return' %} Devolver</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            </div>
+            {% else %}
+            <div class="vazio">{% icon 'check' %}Todos os notebooks estão no laboratório.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="stack">
+        {% if quebrados %}
+        <div class="panel reveal" style="--i:6; border-color: rgba(255,59,92,.4)">
+            <div class="panel-head">
+                <h2 style="color:var(--red)">{% icon 'alert' %} Quebrados</h2>
+                <div class="acoes"><a class="btn btn-sm btn-ghost" href="{% url 'notebooks' %}?status=quebrado">Ver {% icon 'arrow' %}</a></div>
+            </div>
+            <div class="lista-itens">
+                {% for nb in quebrados|slice:":5" %}
+                <a class="item red" href="{% url 'notebook_detalhe' nb.pk %}">
+                    <div class="corpo">
+                        <div class="t">{{ nb.numero }}</div>
+                        <div class="s">{{ nb.baixa_ativa.motivo|default:"Sem descrição"|truncatechars:60 }}</div>
+                    </div>
+                    <span class="badge red"><span class="led pulsa"></span>{{ nb.baixa_ativa.registrado_em|date:"d/m" }}</span>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="panel reveal" style="--i:7">
+            <div class="panel-head">
+                <h2>{% icon 'clock' %} Próximos 7 dias</h2>
+                <div class="acoes"><a class="btn btn-sm btn-ghost btn-icon" href="{% url 'agenda_novo' %}" title="Novo agendamento">{% icon 'plus' %}</a></div>
+            </div>
+            {% if proximos %}
+            <div class="lista-itens">
+                {% for ag in proximos %}
+                <a class="item" href="{% url 'agenda_detalhe' ag.pk %}">
+                    <div class="hora-bloco"><b>{{ ag.data|date:"d" }}</b>{{ ag.data|date:"b" }}</div>
+                    <div class="corpo">
+                        <div class="t">{{ ag.titulo }}</div>
+                        <div class="s">{{ ag.data|date:"l" }} · {{ ag.hora_inicio|time:"H:i" }}–{{ ag.hora_fim|time:"H:i" }}</div>
+                    </div>
+                    <div class="qtd">{% icon 'laptop' %}{{ ag.quantidade }}</div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="vazio">{% icon 'calendar' %}Nada agendado para a próxima semana.</div>
+            {% endif %}
+        </div>
+
+        <div class="panel reveal" style="--i:8">
+            <div class="panel-head"><h2>{% icon 'activity' %} Atividade recente</h2></div>
+            {% if atividade %}
+            <div class="timeline">
+                {% for ev in atividade %}
+                <div class="ev">
+                    <div class="ev-dot {{ ev.tipo }}">
+                        {% if ev.tipo == 'saida' %}{% icon 'arrow' %}{% elif ev.tipo == 'entrada' %}{% icon 'return' %}{% elif ev.tipo == 'baixa' %}{% icon 'alert' %}{% elif ev.tipo == 'reparo' %}{% icon 'wrench' %}{% else %}{% icon 'calendar' %}{% endif %}
+                    </div>
+                    <div>
+                        <div class="t">{{ ev.texto }}</div>
+                        <div class="s">{{ ev.quando|naturaltime }}{% if ev.usuario %} · {{ ev.usuario }}{% endif %}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="vazio">{% icon 'activity' %}Nenhuma movimentação ainda.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

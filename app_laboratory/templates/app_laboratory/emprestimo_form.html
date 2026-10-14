@@ -1,0 +1,58 @@
+{% extends 'app_laboratory/base.html' %}
+{% load lab %}
+{% block title %}Novo empréstimo{% endblock %}
+{% block eyebrow %}Movimentação{% endblock %}
+{% block page_title %}Novo empréstimo{% endblock %}
+
+{% block content %}
+<form method="post" class="grid grid-main">
+    {% csrf_token %}
+    <div class="panel reveal">
+        <div class="panel-head">
+            <h2>{% icon 'laptop' %} Quais notebooks?</h2>
+            <span class="picker-contador" style="margin-left:auto">0 selecionados</span>
+        </div>
+        {% if agendamento %}
+        <div class="alerta-box violet" style="margin-bottom:16px">
+            {% icon 'calendar' %}
+            <div><strong>Retirada do agendamento "{{ agendamento.titulo }}"</strong>
+                <div class="muted" style="font-size:.86rem">{{ agendamento.quantidade }} notebook(s) reservados para {{ agendamento.data|date:"d/m" }}, {{ agendamento.hora_inicio|time:"H:i" }}–{{ agendamento.hora_fim|time:"H:i" }}. Já pré-selecionamos os primeiros disponíveis.</div>
+            </div>
+        </div>
+        {% endif %}
+        {% if disponiveis %}
+        <div class="picker-head">
+            <div class="busca" style="max-width:220px">{% icon 'search' %}<input type="search" id="picker-filtro" placeholder="Filtrar…"></div>
+            <button type="button" class="btn btn-sm" data-selecionar="todos">Todos</button>
+            <button type="button" class="btn btn-sm btn-ghost" data-selecionar="0">Limpar</button>
+            <span class="muted" style="font-size:.8rem;margin-left:auto">{{ disponiveis|length }} disponíveis</span>
+        </div>
+        {% for e in form.notebooks.errors %}<div class="erro-geral">{% icon 'alert' %}{{ e }}</div>{% endfor %}
+        <div class="picker">
+            {% for nb in disponiveis %}
+            <label class="chip-nb" title="{{ nb.modelo }}">
+                <input type="checkbox" name="notebooks" value="{{ nb.pk }}" {% if nb.pk|stringformat:"s" in selecionados %}checked{% endif %}>
+                <span>{% icon 'laptop' %}{{ nb.numero }}</span>
+            </label>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="vazio">{% icon 'alert' %}Nenhum notebook disponível no momento.</div>
+        {% endif %}
+    </div>
+
+    <div class="panel reveal" style="--i:1">
+        <div class="panel-head"><h2>{% icon 'user' %} Para quem?</h2></div>
+        {% for e in form.non_field_errors %}<div class="erro-geral">{% icon 'alert' %}{{ e }}</div>{% endfor %}
+        {% include 'app_laboratory/_campo.html' with f=form.pessoa %}
+        {% include 'app_laboratory/_campo.html' with f=form.contato %}
+        {% include 'app_laboratory/_campo.html' with f=form.finalidade %}
+        {% include 'app_laboratory/_campo.html' with f=form.devolucao_prevista %}
+        {% include 'app_laboratory/_campo.html' with f=form.agendamento %}
+        {% include 'app_laboratory/_campo.html' with f=form.observacoes %}
+        <div class="form-acoes">
+            <button class="btn btn-primary btn-block" {% if not disponiveis %}disabled{% endif %}>{% icon 'zap' %} Registrar saída</button>
+        </div>
+    </div>
+</form>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends 'app_laboratory/base.html' %}
+{% load lab humanize %}
+{% block title %}Empréstimos{% endblock %}
+{% block eyebrow %}Movimentação{% endblock %}
+{% block page_title %}Empréstimos{% endblock %}
+{% block topbar_acoes %}
+    <a class="btn btn-primary" href="{% url 'emprestimo_novo' %}">{% icon 'zap' %}<span class="txt">Novo empréstimo</span></a>
+{% endblock %}
+
+{% block content %}
+<div class="toolbar">
+    <form class="busca" method="get" style="max-width:420px">
+        {% icon 'search' %}
+        <input type="search" name="q" value="{{ q }}" placeholder="Buscar pessoa, notebook ou finalidade…">
+    </form>
+    {% if q %}<a class="btn btn-sm btn-ghost" href="{% url 'emprestimos' %}">{% icon 'x' %} Limpar</a>{% endif %}
+</div>
+
+<div class="panel reveal" style="margin-bottom:20px">
+    <div class="panel-head">
+        <h2>{% icon 'swap' %} Em andamento</h2>
+        <span class="badge violet" style="margin-left:auto">{{ ativos|length }} fora do laboratório</span>
+    </div>
+    {% if ativos %}
+    <div class="tabela-wrap">
+    <table class="tabela">
+        <thead><tr><th>Notebook</th><th>Pessoa</th><th>Finalidade</th><th>Saída</th><th>Devolução prevista</th><th></th></tr></thead>
+        <tbody>
+        {% for e in ativos %}
+        <tr class="{% if e.atrasado %}atrasado{% endif %}">
+            <td class="num"><a href="{% url 'notebook_detalhe' e.notebook.pk %}">{{ e.notebook }}</a></td>
+            <td><strong>{{ e.pessoa }}</strong>{% if e.contato %}<div class="faint" style="font-size:.78rem">{{ e.contato }}</div>{% endif %}</td>
+            <td class="muted">{% if e.agendamento %}<a href="{% url 'agenda_detalhe' e.agendamento.pk %}">{% icon 'calendar' %} {{ e.agendamento.titulo }}</a>{% else %}{{ e.finalidade|default:"—" }}{% endif %}</td>
+            <td>{{ e.retirado_em|date:"d/m H:i" }}<div class="faint" style="font-size:.75rem">{{ e.retirado_em|naturaltime }}{% if e.registrado_por %} · {{ e.registrado_por }}{% endif %}</div></td>
+            <td>{% if e.atrasado %}<span class="badge amber"><span class="led pulsa"></span>{{ e.devolucao_prevista|date:"d/m H:i" }}</span>{% elif e.devolucao_prevista %}{{ e.devolucao_prevista|date:"d/m H:i" }}{% else %}<span class="faint">—</span>{% endif %}</td>
+            <td class="acoes-cel">
+                <form method="post" action="{% url 'emprestimo_devolver' e.pk %}" class="inline">
+                    {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button class="btn btn-sm btn-green">{% icon 'return' %} Devolver</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% else %}
+    <div class="vazio">{% icon 'check' %}{% if q %}Nenhum empréstimo ativo encontrado.{% else %}Nenhum notebook fora do laboratório agora.{% endif %}</div>
+    {% endif %}
+</div>
+
+<div class="panel reveal" style="--i:1">
+    <div class="panel-head"><h2>{% icon 'history' %} Histórico de devoluções</h2></div>
+    {% if pagina.object_list %}
+    <div class="tabela-wrap">
+    <table class="tabela">
+        <thead><tr><th>Notebook</th><th>Pessoa</th><th>Saída</th><th>Devolução</th><th>Duração</th></tr></thead>
+        <tbody>
+        {% for e in pagina %}
+        <tr>
+            <td class="num"><a href="{% url 'notebook_detalhe' e.notebook.pk %}">{{ e.notebook }}</a></td>
+            <td>{{ e.pessoa }}{% if e.finalidade %}<div class="faint" style="font-size:.76rem">{{ e.finalidade }}</div>{% endif %}</td>
+            <td>{{ e.retirado_em|date:"d/m/y H:i" }}</td>
+            <td>{{ e.devolvido_em|date:"d/m/y H:i" }}{% if e.recebido_por %}<div class="faint" style="font-size:.75rem">recebido por {{ e.recebido_por }}</div>{% endif %}</td>
+            <td class="muted mono">{{ e.retirado_em|timesince:e.devolvido_em }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% if pagina.has_other_pages %}
+    <div class="paginacao">
+        {% if pagina.has_previous %}<a class="btn btn-sm" href="?pagina={{ pagina.previous_page_number }}{% if q %}&q={{ q|urlencode }}{% endif %}">{% icon 'left' %}</a>{% endif %}
+        <span class="mono">página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+        {% if pagina.has_next %}<a class="btn btn-sm" href="?pagina={{ pagina.next_page_number }}{% if q %}&q={{ q|urlencode }}{% endif %}">{% icon 'right' %}</a>{% endif %}
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="vazio">{% icon 'history' %}Nenhuma devolução registrada ainda.</div>
+    {% endif %}
+</div>
+{% endblock %}

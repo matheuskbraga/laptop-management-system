@@ -1,0 +1,6 @@
+{% load lab %}<div class="campo{% if f.errors %} tem-erro{% endif %}">
+    <label for="{{ f.id_for_label }}">{{ f.label }}</label>
+    {{ f }}
+    {% if f.help_text %}<span class="ajuda">{{ f.help_text }}</span>{% endif %}
+    {% for e in f.errors %}<span class="erro">{% icon 'alert' %}{{ e }}</span>{% endfor %}
+</div>

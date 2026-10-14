@@ -1,0 +1,119 @@
+{% extends 'app_laboratory/base.html' %}
+{% load lab humanize %}
+{% block title %}{{ nb }}{% endblock %}
+{% block eyebrow %}Notebook{% endblock %}
+{% block page_title %}{{ nb }}{% endblock %}
+
+{% block content %}
+{% with emp=nb.emprestimo_ativo baixa=nb.baixa_ativa %}
+<div class="panel reveal" style="margin-bottom:20px{% if nb.quebrado %}; border-color: rgba(255,59,92,.6); box-shadow: 0 0 40px -12px rgba(255,59,92,.6){% endif %}">
+    <div class="hero">
+        <div class="hero-icone {{ nb.status }}">{% icon 'laptop' %}</div>
+        <div>
+            <h2>{{ nb.numero }}</h2>
+            <div class="muted">{{ nb.modelo|default:"Modelo não informado" }}</div>
+            <div style="margin-top:8px">
+                <span class="badge {% if nb.quebrado %}red{% elif nb.emprestado %}{% if emp.atrasado %}amber{% else %}violet{% endif %}{% else %}green{% endif %}">
+                    <span class="led pulsa"></span>{% if emp.atrasado %}Atrasado{% else %}{{ nb.get_status_display }}{% endif %}
+                </span>
+            </div>
+        </div>
+        <div class="acoes">
+            {% if nb.disponivel %}
+                <a class="btn btn-green" href="{% url 'emprestimo_novo' %}?notebook={{ nb.pk }}">{% icon 'swap' %} Emprestar</a>
+            {% elif nb.emprestado %}
+                <form method="post" action="{% url 'notebook_devolver' nb.pk %}" class="inline">
+                    {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button class="btn">{% icon 'return' %} Registrar devolução</button>
+                </form>
+            {% else %}
+                <button class="btn btn-amber" data-modal="#modal-reparar" data-action="{% url 'notebook_reparar' nb.pk %}" data-numero="{{ nb.numero }}">{% icon 'wrench' %} Marcar como reparado</button>
+            {% endif %}
+            {% if not nb.quebrado %}
+                <button class="btn btn-red" data-modal="#modal-baixa" data-action="{% url 'notebook_baixa' nb.pk %}" data-numero="{{ nb.numero }}">{% icon 'alert' %} Dar baixa</button>
+            {% endif %}
+            <a class="btn btn-icon" href="{% url 'notebook_editar' nb.pk %}" title="Editar">{% icon 'edit' %}</a>
+            <form method="post" action="{% url 'notebook_remover' nb.pk %}" class="inline"
+                  data-confirmar="Remover {{ nb.numero }} do inventário? Todo o histórico dele também será apagado. Essa ação não pode ser desfeita.">
+                {% csrf_token %}
+                <button class="btn btn-icon btn-ghost" title="Remover do inventário">{% icon 'trash' %}</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if nb.quebrado and baixa %}
+<div class="alerta-box reveal" style="--i:1; margin-bottom:20px">
+    {% icon 'alert' %}
+    <div>
+        <strong>Fora de circulação desde {{ baixa.registrado_em|date:"d/m/Y \à\s H:i" }}</strong>{% if baixa.registrado_por %} · baixa autorizada por {{ baixa.registrado_por }}{% endif %}
+        <div style="margin-top:4px">{{ baixa.motivo|linebreaksbr }}</div>
+    </div>
+</div>
+{% elif emp %}
+<div class="alerta-box {% if emp.atrasado %}amber{% else %}violet{% endif %} reveal" style="--i:1; margin-bottom:20px">
+    {% icon 'user' %}
+    <div>
+        <strong>Com {{ emp.pessoa }}</strong>{% if emp.contato %} · {{ emp.contato }}{% endif %}
+        <div class="muted" style="font-size:.88rem">Saiu {{ emp.retirado_em|naturaltime }}{% if emp.devolucao_prevista %} · devolução prevista {{ emp.devolucao_prevista|date:"d/m H:i" }}{% endif %}{% if emp.finalidade %} · {{ emp.finalidade }}{% endif %}</div>
+    </div>
+</div>
+{% endif %}
+
+<div class="grid grid-main">
+    <div class="panel reveal" style="--i:2">
+        <div class="panel-head"><h2>{% icon 'history' %} Histórico de empréstimos</h2><span class="badge gray" style="margin-left:auto">{{ total_emprestimos }} no total</span></div>
+        {% if emprestimos %}
+        <div class="tabela-wrap">
+        <table class="tabela">
+            <thead><tr><th>Pessoa</th><th>Saída</th><th>Devolução</th><th>Finalidade</th></tr></thead>
+            <tbody>
+            {% for e in emprestimos %}
+            <tr class="{% if e.atrasado %}atrasado{% endif %}">
+                <td><strong>{{ e.pessoa }}</strong>{% if e.contato %}<div class="faint" style="font-size:.78rem">{{ e.contato }}</div>{% endif %}</td>
+                <td>{{ e.retirado_em|date:"d/m/y H:i" }}{% if e.registrado_por %}<div class="faint" style="font-size:.75rem">por {{ e.registrado_por }}</div>{% endif %}</td>
+                <td>{% if e.devolvido_em %}{{ e.devolvido_em|date:"d/m/y H:i" }}{% if e.recebido_por %}<div class="faint" style="font-size:.75rem">recebido por {{ e.recebido_por }}</div>{% endif %}{% else %}<span class="badge {% if e.atrasado %}amber{% else %}violet{% endif %}">em uso</span>{% endif %}</td>
+                <td class="muted">{% if e.agendamento %}<a href="{% url 'agenda_detalhe' e.agendamento.pk %}">{{ e.agendamento.titulo }}</a>{% else %}{{ e.finalidade|default:"—" }}{% endif %}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <div class="vazio">{% icon 'history' %}Esse notebook ainda não foi emprestado.</div>
+        {% endif %}
+    </div>
+
+    <div class="stack">
+        <div class="panel reveal" style="--i:3">
+            <div class="panel-head"><h2>{% icon 'info' %} Dados</h2></div>
+            <dl class="kv">
+                <dt>Número</dt><dd class="mono">{{ nb.numero }}</dd>
+                <dt>Modelo</dt><dd>{{ nb.modelo|default:"—" }}</dd>
+                <dt>Cadastro</dt><dd>{{ nb.criado_em|date:"d/m/Y" }}</dd>
+                <dt>Notas</dt><dd>{{ nb.observacoes|default:"—"|linebreaksbr }}</dd>
+            </dl>
+        </div>
+        <div class="panel reveal" style="--i:4">
+            <div class="panel-head"><h2>{% icon 'wrench' %} Ocorrências</h2></div>
+            {% if baixas %}
+            <div class="timeline">
+                {% for b in baixas %}
+                <div class="ev">
+                    <div class="ev-dot {% if b.ativa %}baixa{% else %}reparo{% endif %}">{% if b.ativa %}{% icon 'alert' %}{% else %}{% icon 'check' %}{% endif %}</div>
+                    <div>
+                        <div class="t">{{ b.motivo|truncatechars:90 }}</div>
+                        <div class="s">quebrou {{ b.registrado_em|date:"d/m/y" }}{% if b.registrado_por %} ({{ b.registrado_por }}){% endif %}{% if b.resolvido_em %} · reparado {{ b.resolvido_em|date:"d/m/y" }}{% endif %}</div>
+                        {% if b.solucao %}<div class="s" style="color:var(--green)">{{ b.solucao }}</div>{% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="vazio">{% icon 'check' %}Nenhum problema registrado.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endwith %}
+{% endblock %}

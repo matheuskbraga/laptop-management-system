@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -20,12 +21,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-a5m38g^=cow8e1f$c#4g)a6t(r-7&^qkx&z30d*@ho-oz)h(s&'
+SECRET_KEY = os.environ.get(
+    'DJANGO_SECRET_KEY',
+    'django-insecure-a5m38g^=cow8e1f$c#4g)a6t(r-7&^qkx&z30d*@ho-oz)h(s&',
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Em desenvolvimento local: defina DJANGO_DEBUG=1
+DEBUG = os.environ.get('DJANGO_DEBUG', '0') == '1'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['bragadev50.pythonanywhere.com', 'localhost', '127.0.0.1']
 
 
 # Application definition
@@ -37,7 +42,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'app_laboratory'
+    'django.contrib.humanize',
+    'app_laboratory',
 ]
 
 MIDDLEWARE = [
@@ -62,6 +68,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'app_laboratory.context_processors.contadores',
             ],
         },
     },
@@ -128,12 +135,8 @@ MAILERS = {
 }
 
 LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'listar_notebooks'
+LOGIN_REDIRECT_URL = 'painel'
 LOGOUT_REDIRECT_URL = 'login'
-
-DEBUG = False
-
-ALLOWED_HOSTS = ['bragadev50.pythonanywhere.com']
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'

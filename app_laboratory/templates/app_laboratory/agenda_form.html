@@ -1,0 +1,42 @@
+{% extends 'app_laboratory/base.html' %}
+{% load lab %}
+{% block title %}{% if ag %}Editar agendamento{% else %}Novo agendamento{% endif %}{% endblock %}
+{% block eyebrow %}Reservas{% endblock %}
+{% block page_title %}{% if ag %}Editar agendamento{% else %}Novo agendamento{% endif %}{% endblock %}
+
+{% block content %}
+<form method="post" class="panel form-card reveal">
+    {% csrf_token %}
+    {% for e in form.non_field_errors %}<div class="erro-geral">{% icon 'alert' %}{{ e }}</div>{% endfor %}
+    <div class="campos-2">
+        {% include 'app_laboratory/_campo.html' with f=form.titulo %}
+        {% include 'app_laboratory/_campo.html' with f=form.tipo %}
+        {% include 'app_laboratory/_campo.html' with f=form.solicitante %}
+        {% include 'app_laboratory/_campo.html' with f=form.contato %}
+    </div>
+    <div class="campos-3">
+        {% include 'app_laboratory/_campo.html' with f=form.data %}
+        {% include 'app_laboratory/_campo.html' with f=form.hora_inicio %}
+        {% include 'app_laboratory/_campo.html' with f=form.hora_fim %}
+    </div>
+
+    <div class="disp-box" id="disp-box" data-url="{% url 'agenda_disponibilidade' %}" data-excluir="{{ ag.pk|default:'' }}">
+        <div class="grande">{{ frota }}</div>
+        <div>
+            <div class="texto">em funcionamento. Escolha data e horário para ver a disponibilidade.</div>
+            <div class="conflitos"></div>
+        </div>
+    </div>
+
+    <div class="campos-2">
+        {% include 'app_laboratory/_campo.html' with f=form.quantidade %}
+        <div></div>
+    </div>
+    {% include 'app_laboratory/_campo.html' with f=form.observacoes %}
+
+    <div class="form-acoes">
+        <button class="btn btn-primary">{% icon 'check' %} {% if ag %}Salvar alterações{% else %}Confirmar agendamento{% endif %}</button>
+        <a class="btn btn-ghost" href="{% if ag %}{% url 'agenda_detalhe' ag.pk %}{% else %}{% url 'agenda' %}{% endif %}">Cancelar</a>
+    </div>
+</form>
+{% endblock %}

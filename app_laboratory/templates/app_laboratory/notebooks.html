@@ -1,0 +1,45 @@
+{% extends 'app_laboratory/base.html' %}
+{% load lab %}
+{% block title %}Notebooks{% endblock %}
+{% block eyebrow %}Inventário{% endblock %}
+{% block page_title %}Notebooks{% endblock %}
+{% block topbar_acoes %}
+    <a class="btn btn-primary" href="{% url 'notebook_novo' %}">{% icon 'plus' %}<span class="txt">Cadastrar</span></a>
+{% endblock %}
+
+{% block content %}
+<div class="toolbar">
+    <nav class="tabs">
+        <a href="?{% if q %}q={{ q|urlencode }}{% endif %}" class="{% if not status %}ativo{% endif %}">Todos <span class="n">{{ contagem.todos }}</span></a>
+        <a href="?status=disponivel{% if q %}&q={{ q|urlencode }}{% endif %}" class="{% if status == 'disponivel' %}ativo{% endif %}">Disponíveis <span class="n">{{ contagem.disponivel }}</span></a>
+        <a href="?status=emprestado{% if q %}&q={{ q|urlencode }}{% endif %}" class="{% if status == 'emprestado' %}ativo{% endif %}">Emprestados <span class="n">{{ contagem.emprestado }}</span></a>
+        <a href="?status=quebrado{% if q %}&q={{ q|urlencode }}{% endif %}" class="t-red {% if status == 'quebrado' %}ativo{% endif %}">Quebrados <span class="n">{{ contagem.quebrado }}</span></a>
+    </nav>
+    <form class="busca" method="get">
+        {% icon 'search' %}
+        {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+        <input type="search" name="q" value="{{ q }}" placeholder="Buscar número, modelo ou pessoa…" autocomplete="off">
+    </form>
+    <div class="view-toggle" style="margin-left:auto">
+        <button type="button" data-view="grade" title="Grade">{% icon 'grid' %}</button>
+        <button type="button" data-view="lista" title="Lista">{% icon 'list' %}</button>
+    </div>
+</div>
+
+{% if notebooks %}
+<div class="nb-grid">
+    {% for nb in notebooks %}
+        {% include 'app_laboratory/_nb_card.html' with i=forloop.counter0 %}
+    {% endfor %}
+</div>
+<div class="panel vazio hide" id="filtro-vazio">{% icon 'search' %}Nenhum notebook corresponde à busca.</div>
+{% else %}
+<div class="panel vazio">
+    {% icon 'laptop' %}
+    {% if q or status %}Nenhum notebook encontrado com esses filtros.
+    {% else %}Nenhum notebook cadastrado ainda.
+        <a class="btn btn-primary" href="{% url 'notebook_novo' %}" style="margin-top:8px">{% icon 'plus' %} Cadastrar o primeiro</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}
